@@ -69,6 +69,8 @@ class CHalos:
 
         self.loadPositions()
 
+        self.nrParticlesInHalos = 0
+        self.percentageInHalos = 0
 
 
     def initialize(self):
@@ -132,6 +134,16 @@ class CHalos:
         for friend in friends:
             self.findNeighbors(friend, allFriends)
 
+
+    def getSortedSizes(self):
+        sizes = []
+        for halo in self.halos:
+            sizes.append(halo.size)
+
+        # sizes = [10, 213, 22, 123, 10, 432]
+        # sizes = np.array(sizes)*np.random.normal(1, 1)
+
+        return np.sort(sizes)[::-1]
 
 
     def FOF(self):
