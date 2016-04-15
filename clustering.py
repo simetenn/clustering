@@ -1,10 +1,11 @@
 import matplotlib
 matplotlib.use('GTKAgg')
 
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
+import argparse
+import time
 
 
 
@@ -286,14 +287,20 @@ class CHalos:
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(description="FOF analysis on a single file")
+    parser.add_argument("filename")
+
+    args = parser.parse_args()
+
     b = 0.28
     minNrHalos = 10
+    linkingLength = 2
 
-
-    halos = CHalos("1500 mEC WFA+Geph H1_position .xls", b, minNrHalos)
-    #start_time = time.time()
+    halos = CHalos(args.filename, b, minNrHalos)
+    start_time = time.time()
+    halos.linkingLength = linkingLength
     halos.FOF()
-    #print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- %s seconds ---" % (time.time() - start_time))
 
 
     #halos.save("outHalos.dat")
@@ -301,12 +308,4 @@ if __name__ == "__main__":
     print halos.linkingLength
     halos.plotParticles("particles.png")
     halos.plotHalos("halos.png")
-    print halos.linkingLength
-
-    halos = CHalos("1500 mEC WFA+Geph H2_position.xls", b, minNrHalos)
-    halos.FOF()
-    #halos.save("outHalos.dat")
-    halos.printInformation()
-    halos.plotParticles("particles2.png")
-    halos.plotHalos("halos2.png")
     print halos.linkingLength

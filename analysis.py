@@ -8,8 +8,9 @@ import glob
 import pylab as plt
 from uncertainpy import prettyPlot
 import scipy.ndimage.filters
-import scipy.interpolate
-
+import sys
+import pickle
+import argparse
 
 b = 0.28
 minNrHalos = 10
@@ -21,7 +22,7 @@ sigma = 2
 data_folder = "data"
 output_dir = "results"
 
-
+sys.setrecursionlimit(50000)
 
 def pairFiles(foldername):
     pattern = re.compile(r"(.*)H(\d_position.xls)$")
@@ -40,6 +41,14 @@ def pairFiles(foldername):
 
     return file_pairs
 
+
+def save_obj(obj, name):
+    with open('obj/' + name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj(name):
+    with open('obj/' + name + '.pkl', 'rb') as f:
+        return pickle.load(f)
 
 
 def allFOF(foldername, output_dir="results"):
@@ -78,13 +87,6 @@ def allFOF(foldername, output_dir="results"):
                 tmp = root.split("/")
                 key = tmp[1] + "_" + tmp[2] + "_" + result.group(1) + "_" + result.group(2)
 
-                # f = open(os.path.join(output_dir, tmp[1] + "_" + tmp[2] + "_" + result.group(1) + "_" + result.group(2) + ".dat"), "a")
-                # f.write("{},{},{},{}\n".format(halos.nrParticles,
-                #                                halos.nrHalos,
-                #                                halos.nrParticlesInHalos,
-                #                                halos.percentageInHalos))
-                # f.close()
-
                 if key in sizes:
                     sizes[key].append(halos.getSortedSizes())
                     nrParticlesInHalos[key].append(halos.nrParticlesInHalos)
@@ -98,6 +100,22 @@ def allFOF(foldername, output_dir="results"):
                     nrParticles[key] = [halos.nrParticles]
                     percentageInHalos[key] = [halos.percentageInHalos]
 
+
+    save_obj(sizes, "sizes")
+    save_obj(nrParticlesInHalos, "nrParticlesInHalos")
+    save_obj(nrHalos, "nrHalosnrHalos")
+    save_obj(percentageInHalos, "percentageInHalos")
+    save_obj(nrParticles, "nrParticles")
+
+    print "--- %s seconds ---" % (time.time() - start_time)
+
+
+def results():
+    sizes = load_obj("sizes")
+    nrParticlesInHalos = load_obj("nrParticlesInHalos")
+    nrHalos = load_obj("nrHalosnrHalos")
+    percentageInHalos = load_obj("percentageInHalos")
+    nrParticles = load_obj("nrParticles")
 
 
     for key in sizes:
@@ -117,15 +135,6 @@ def allFOF(foldername, output_dir="results"):
 
         mean = np.mean(sizes[key], 0)
         var = np.var(sizes[key], 0)
-        # prettyPlot(np.mean(sizes[key], 0), xrange(1, len(sizes[key][0]) + 1), xlabel="nrParticles", ylabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=0)
-        # prettyPlot(np.mean(sizes[key], 0), xlabel="nrParticles", ylabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=0)
-        # prettyPlot(np.var(sizes[key], 0), xlabel="nrParticles", ylabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=2, new_figure=False)
-        # plt.yscale('log')
-        # prettyPlot(xrange(1, len(sizes[key][0]) + 1),mean, ylabel="nrParticles", xlabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=0)
-
-
-        #
-
 
         color1 = 0
         color2 = 8
@@ -180,7 +189,7 @@ def allFOF(foldername, output_dir="results"):
 
 
 
-    print "--- %s seconds ---" % (time.time() - start_time)
+
 
 
 # TODO look closer at this
@@ -194,27 +203,39 @@ def fractionalDifference(meanH, meanV):
     massV = np.zeros(nrBins)
     massH[-1] = histHdata[-1]
     massV[-1] = histVdata[-1]
+
     for i in range(nrBins-2, -1, -1):
         massH[i] = histHdata[i] + massH[i+1]
         massV[i] = histVdata[i] + massV[i+1]
 
     tmp = np.abs(massV - massH)/massH.astype(float)
     diff = (scipy.ndimage.filters.gaussian_filter(tmp, sigma))
+
     return x, diff
 
 
-def compare(output_dir="results"):
-    f = open(os.path.join(output_dir, "comparison.txt"))
-    for filename in glob.glob(output_dir):
-        data = np.loadtxt(filename, delimiter=",")
+# def compare(output_dir="results"):
+#     f = open(os.path.join(output_dir, "comparison.txt"))
+#     for filename in glob.glob(output_dir):
+#         data = np.loadtxt(filename, delimiter=",")
+#
+#     f.close()
 
-    f.close()
+
 
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description="convert all xls files to csv")
-    # parser.add_argument("-f", "--full")
+    parser = argparse.ArgumentParser(description="convert all xls files to csv")
+    parser.add_argument("-f", "--fof")
+    parser.add_argument("-r", "--results")
 
+    #crash at data/eksitatorisk/visuell/1500 V1 WFA+PSD95 V6_position.csv
 
-    allFOF(data_folder)
+    args = parser.parse_args()
+
+    if args.fof:
+        allFOF(data_folder)
+
+    if args.result:
+        results()
