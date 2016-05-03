@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import subprocess
 import argparse
 import time
+import sys
 
-
+sys.setrecursionlimit(50000)
 
 def system(cmd, verbose=1):
     """Run system command cmd using subprocess module."""

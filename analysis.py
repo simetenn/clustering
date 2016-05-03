@@ -14,13 +14,14 @@ import argparse
 
 b = 0.28
 minNrHalos = 10
-linkingLength = 2
+linkingLength = 1.5
 
 nrBins = 5
 sigma = 2
 
 data_folder = "data"
 output_dir = "results"
+
 
 sys.setrecursionlimit(50000)
 
@@ -42,20 +43,20 @@ def pairFiles(foldername):
     return file_pairs
 
 
-def save_obj(obj, name):
-    with open('obj/' + name + '.pkl', 'wb') as f:
+def save_obj(obj, folder, name):
+    with open(os.path.join(folder, name + '.pkl'), 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-def load_obj(name):
-    with open('obj/' + name + '.pkl', 'rb') as f:
+def load_obj(name, folder):
+    with open(os.path.join(folder, name + '.pkl'), 'rb') as f:
         return pickle.load(f)
 
 
-def allFOF(foldername, output_dir="results"):
-    if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(output_dir)
-    os.makedirs(os.path.join(output_dir, "figures"))
+def allFOF(foldername, analysed_results_dir="obj"):
+
+    if not os.path.isdir(analysed_results_dir):
+        # shutil.rmtree(analysed_results_dir)
+        os.makedirs(analysed_results_dir)
 
     pattern = re.compile(r"^(\d{4}.*)(H|V)(\d_position.csv)$")
 
@@ -101,30 +102,79 @@ def allFOF(foldername, output_dir="results"):
                     percentageInHalos[key] = [halos.percentageInHalos]
 
 
-    save_obj(sizes, "sizes")
-    save_obj(nrParticlesInHalos, "nrParticlesInHalos")
+    save_obj(sizes, "sizes", analysed_results_dir)
+    save_obj(nrParticlesInHalos, "nrParticlesInHalos", analysed_results_dir)
     save_obj(nrHalos, "nrHalosnrHalos")
-    save_obj(percentageInHalos, "percentageInHalos")
-    save_obj(nrParticles, "nrParticles")
+    save_obj(percentageInHalos, "percentageInHalos", analysed_results_dir)
+    save_obj(nrParticles, "nrParticles", analysed_results_dir)
 
     print "--- %s seconds ---" % (time.time() - start_time)
 
 
-def results():
-    sizes = load_obj("sizes")
-    nrParticlesInHalos = load_obj("nrParticlesInHalos")
-    nrHalos = load_obj("nrHalosnrHalos")
-    percentageInHalos = load_obj("percentageInHalos")
-    nrParticles = load_obj("nrParticles")
+def calculateMean(datasett):
+    t_max = []
+    interpolations = []
+    legend = []
+    i = 0
+    c = 0
+    # plt.figure()
+    for data in datasett:
+        t = xrange(1, len(data) + 1)
+
+        if len(t) > len(t_max):
+            t_max = t
+
+        interpolations.append(scipy.interpolate.InterpolatedUnivariateSpline(t, data, k=3))
+
+        # prettyPlot(t, data, new_figure=False, color=c)
+        legend.append("{}".format(i))
+        i += 1
+        c += 2
+
+
+    # plt.show()
+    tmp_mean = []
+    for interpolation in interpolations:
+        tmp_mean.append(interpolation(t_max))
+
+    # Check if interpolation is equal original values
+    for i in range(len(tmp_mean)):
+        print range(1, len(datasett[i]) + 1)[:10]
+        print datasett[i][:10]
+        plt.loglog(datasett[i], xrange(1, len(datasett[i]) + 1), "*")
+        plt.loglog(tmp_mean[i], t_max)
+
+        plt.show()
+
+    mean = np.mean(tmp_mean, 0)
+    std = np.std(tmp_mean, 0)
+
+    return mean, std
+
+
+
+def results(output_dir="results", analysed_results_dir="obj"):
+    output_dir = os.path.join(output_dir, analysed_results_dir)
+    if os.path.isdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+    os.makedirs(os.path.join(output_dir, "figures"))
+
+
+    sizes = load_obj("sizes", analysed_results_dir)
+    nrParticlesInHalos = load_obj("nrParticlesInHalos", analysed_results_dir)
+    nrHalos = load_obj("nrHalosnrHalos", analysed_results_dir)
+    percentageInHalos = load_obj("percentageInHalos", analysed_results_dir)
+    nrParticles = load_obj("nrParticles", analysed_results_dir)
 
 
     for key in sizes:
         f = open(os.path.join(output_dir, key + ".txt"), "w")
-        f.write("                    Mean  Var\n")
-        f.write("nrParticles:        {} {}\n".format(np.mean(nrParticles[key]), np.var(nrParticles[key])))
-        f.write("nrHalos:            {} {}\n".format(np.mean(nrHalos[key]), np.var(nrHalos[key])))
-        f.write("nrParticlesInHalos: {} {}\n".format(np.mean(nrParticlesInHalos[key]), np.var(nrParticlesInHalos[key])))
-        f.write("percentageInHalos:  {} {}\n".format(np.mean(percentageInHalos[key]), np.var(percentageInHalos[key])))
+        f.write("                    Mean  std\n")
+        f.write("nrParticles:        {} {}\n".format(np.mean(nrParticles[key]), np.std(nrParticles[key])))
+        f.write("nrHalos:            {} {}\n".format(np.mean(nrHalos[key]), np.std(nrHalos[key])))
+        f.write("nrParticlesInHalos: {} {}\n".format(np.mean(nrParticlesInHalos[key]), np.std(nrParticlesInHalos[key])))
+        f.write("percentageInHalos:  {} {}\n".format(np.mean(percentageInHalos[key]), np.std(percentageInHalos[key])))
         f.close()
 
 
@@ -132,32 +182,47 @@ def results():
 
     # PLotting
     for key in sizes:
-
-        mean = np.mean(sizes[key], 0)
-        var = np.var(sizes[key], 0)
+        mean, std = calculateMean(sizes[key])
 
         color1 = 0
         color2 = 8
 
-        ax, tableau20 = prettyPlot(xrange(1, len(mean) + 1), mean, "Cumulative cluster size", "nr of cluster with number of particles > nrParticles", "nrParticles, mean", color1)
-        ax2 = ax.twinx()
-        ax2.tick_params(axis="y", which="both", right="on", left="off", labelright="on",
-                        color=tableau20[color2], labelcolor=tableau20[color2], labelsize=14)
-        ax2.set_ylabel("nrParticles, variance", color=tableau20[color2], fontsize=16)
-        ax.spines["right"].set_edgecolor(tableau20[color2])
+        # ax, tableau20 = prettyPlot(xrange(1, len(mean) + 1), mean, "Cumulative cluster size", "nr of cluster with number of cells > nrParticles", "nr cells, mean", color1)
 
-        ax2.set_xlim([1, len(mean) + 1])
-        ax2.set_ylim([min(var), max(var)])
 
-        ax2.plot(xrange(1, len(var) + 1), var,
-                 color=tableau20[color2], linewidth=2, antialiased=True)
+        # prettyPlot(xrange(1, len(mean) + 1), std, "Cumulative cluster size", "nr of cluster with number of particles > nrParticles", "nrParticles, mean", color2, new_figure=False)
 
-        ax.tick_params(axis="y", color=tableau20[color1], labelcolor=tableau20[color1])
-        ax.set_ylabel("nr of cluster with number of particles > nrParticles, mean", color=tableau20[color1], fontsize=16)
-        ax.spines["left"].set_edgecolor(tableau20[color1])
+        # plt.yscale('log')
+        # ax2 = ax.twinx()
+        # ax2.tick_params(axis="y", which="both", right="on", left="off", labelright="on",
+        #                 color=tableau20[color2], labelcolor=tableau20[color2], labelsize=14)
+        # ax2.set_ylabel("nrParticles, variance", color=tableau20[color2], fontsize=16)
+        # ax.spines["right"].set_edgecolor(tableau20[color2])
+        #
+        # ax2.set_xlim([1, len(mean) + 1])
+        # ax2.set_ylim([min(std), max(std)])
+        #
+        # ax2.plot(xrange(1, len(std) + 1), std,
+        #          color=tableau20[color2], linewidth=2, antialiased=True)
+        #
+        # ax.tick_params(axis="y", color=tableau20[color1], labelcolor=tableau20[color1])
+        # ax.set_ylabel("nr of cluster with number of particles > nrParticles, std", color=tableau20[color1], fontsize=16)
+        # ax.spines["left"].set_edgecolor(tableau20[color1])
+        #
+        # plt.yscale('log')
+        # plt.xscale('log')
         plt.savefig(os.path.join(output_dir, "figures", key + ".png"))
 
 
+
+
+
+
+
+
+
+
+    sys.exit()
 
 
 
@@ -214,28 +279,21 @@ def fractionalDifference(meanH, meanV):
     return x, diff
 
 
-# def compare(output_dir="results"):
-#     f = open(os.path.join(output_dir, "comparison.txt"))
-#     for filename in glob.glob(output_dir):
-#         data = np.loadtxt(filename, delimiter=",")
-#
-#     f.close()
-
-
 
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="convert all xls files to csv")
-    parser.add_argument("-f", "--fof")
-    parser.add_argument("-r", "--results")
+    parser = argparse.ArgumentParser(description="Perform a clustering analysis")
+    parser.add_argument("analysed_results_dir", help="Analysed results folder")
+    parser.add_argument("-f", "--fof", action="store_true", help="Perform the friend of friends analysis")
+    parser.add_argument("-r", "--results", action="store_true", help="Analyse the results")
 
     #crash at data/eksitatorisk/visuell/1500 V1 WFA+PSD95 V6_position.csv
 
     args = parser.parse_args()
 
     if args.fof:
-        allFOF(data_folder)
+        allFOF(data_folder, analysed_results_dir=args.analysed_results_dir)
 
-    if args.result:
-        results()
+    if args.results:
+        results(analysed_results_dir=args.analysed_results_dir)
