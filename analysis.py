@@ -6,7 +6,7 @@ import numpy as np
 import shutil
 import glob
 import pylab as plt
-from uncertainpy import prettyPlot
+from uncertainpy import prettyPlot, prettyBar
 import scipy.ndimage.filters
 import sys
 import pickle
@@ -16,8 +16,8 @@ b = 0.28
 minNrHalos = 10
 linkingLength = 1.5
 
-nrBins = 5
-sigma = 2
+nr_bins = 10
+sigma = 1
 
 data_folder = "data"
 output_dir = "results"
@@ -43,7 +43,7 @@ def pairFiles(foldername):
     return file_pairs
 
 
-def save_obj(obj, folder, name):
+def save_obj(obj, name, folder):
     with open(os.path.join(folder, name + '.pkl'), 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
@@ -104,53 +104,81 @@ def allFOF(foldername, analysed_results_dir="obj"):
 
     save_obj(sizes, "sizes", analysed_results_dir)
     save_obj(nrParticlesInHalos, "nrParticlesInHalos", analysed_results_dir)
-    save_obj(nrHalos, "nrHalosnrHalos")
+    save_obj(nrHalos, "nrHalosnrHalos", analysed_results_dir)
     save_obj(percentageInHalos, "percentageInHalos", analysed_results_dir)
     save_obj(nrParticles, "nrParticles", analysed_results_dir)
 
     print "--- %s seconds ---" % (time.time() - start_time)
 
 
+
 def calculateMean(datasett):
-    t_max = []
-    interpolations = []
-    legend = []
-    i = 0
-    c = 0
-    # plt.figure()
+    data_max = 0
+    data_min = 100000
     for data in datasett:
-        t = xrange(1, len(data) + 1)
+        if max(data) > data_max:
+            data_max = max(data)
 
-        if len(t) > len(t_max):
-            t_max = t
+        if min(data) < data_min:
+            data_min = min(data)
 
-        interpolations.append(scipy.interpolate.InterpolatedUnivariateSpline(t, data, k=3))
+    bins = np.linspace(data_min, data_max, nr_bins)
 
-        # prettyPlot(t, data, new_figure=False, color=c)
-        legend.append("{}".format(i))
-        i += 1
-        c += 2
-
-
-    # plt.show()
     tmp_mean = []
-    for interpolation in interpolations:
-        tmp_mean.append(interpolation(t_max))
-
-    # Check if interpolation is equal original values
-    for i in range(len(tmp_mean)):
-        print range(1, len(datasett[i]) + 1)[:10]
-        print datasett[i][:10]
-        plt.loglog(datasett[i], xrange(1, len(datasett[i]) + 1), "*")
-        plt.loglog(tmp_mean[i], t_max)
-
-        plt.show()
+    for data in datasett:
+        tmp_mean.append(np.histogram(data, bins=bins)[0])
 
     mean = np.mean(tmp_mean, 0)
-    std = np.std(tmp_mean, 0)
+    var = np.var(tmp_mean, 0)
 
-    return mean, std
+    tmp = (bins[1:] - bins[:-1])/2.
+    size = bins[1:] - tmp
 
+    width = bins[1] - bins[0]
+
+    return size, mean, var, bins, width
+
+
+
+
+
+def plotAllSizes(sizes):
+    # Plotting all data
+    for key in sizes:
+        c = 0
+        i = 0
+
+        t_max = 0
+        t_min = 10000
+
+        data_max = 0
+        data_min = 10000
+
+        legend = []
+        for data in sizes[key]:
+            t = range(1, len(data) + 1)
+            prettyPlot(data, t, "nr cells", "nr of cluster with number of cells > nrParticles", "Cumulative cluster size", color=c, new_figure=False)
+
+            if max(data) > data_max:
+                data_max = max(data)
+            if min(data) < data_min:
+                data_min = min(data)
+            if max(t) > t_max:
+                t_max = max(t)
+            if min(t) < t_min:
+                t_min = min(t)
+
+            legend.append("Datasett {}".format(i))
+            i += 1
+            c += 2
+
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.ylim([t_min, t_max])
+        plt.xlim([data_min, data_max])
+        plt.legend(legend)
+        plt.savefig(os.path.join(output_dir, "figures", key + ".png"))
+        plt.clf()
 
 
 def results(output_dir="results", analysed_results_dir="obj"):
@@ -178,51 +206,75 @@ def results(output_dir="results", analysed_results_dir="obj"):
         f.close()
 
 
-
-
-    # PLotting
+    # Plotting all data
     for key in sizes:
-        mean, std = calculateMean(sizes[key])
+        c = 0
+        i = 0
 
-        color1 = 0
-        color2 = 8
+        t_max = 0
+        t_min = 10000
 
-        # ax, tableau20 = prettyPlot(xrange(1, len(mean) + 1), mean, "Cumulative cluster size", "nr of cluster with number of cells > nrParticles", "nr cells, mean", color1)
+        data_max = 0
+        data_min = 10000
 
+        legend = []
+        for data in sizes[key]:
+            t = range(1, len(data) + 1)
+            prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=c, new_figure=False)
 
-        # prettyPlot(xrange(1, len(mean) + 1), std, "Cumulative cluster size", "nr of cluster with number of particles > nrParticles", "nrParticles, mean", color2, new_figure=False)
+            if max(data) > data_max:
+                data_max = max(data)
+            if min(data) < data_min:
+                data_min = min(data)
+            if max(t) > t_max:
+                t_max = max(t)
+            if min(t) < t_min:
+                t_min = min(t)
 
-        # plt.yscale('log')
-        # ax2 = ax.twinx()
-        # ax2.tick_params(axis="y", which="both", right="on", left="off", labelright="on",
-        #                 color=tableau20[color2], labelcolor=tableau20[color2], labelsize=14)
-        # ax2.set_ylabel("nrParticles, variance", color=tableau20[color2], fontsize=16)
-        # ax.spines["right"].set_edgecolor(tableau20[color2])
-        #
-        # ax2.set_xlim([1, len(mean) + 1])
-        # ax2.set_ylim([min(std), max(std)])
-        #
-        # ax2.plot(xrange(1, len(std) + 1), std,
-        #          color=tableau20[color2], linewidth=2, antialiased=True)
-        #
-        # ax.tick_params(axis="y", color=tableau20[color1], labelcolor=tableau20[color1])
-        # ax.set_ylabel("nr of cluster with number of particles > nrParticles, std", color=tableau20[color1], fontsize=16)
-        # ax.spines["left"].set_edgecolor(tableau20[color1])
-        #
-        # plt.yscale('log')
-        # plt.xscale('log')
+            legend.append("Datasett {}".format(i))
+            i += 1
+            c += 2
+
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.ylim([t_min, t_max])
+        plt.xlim([data_min, data_max])
+        plt.legend(legend)
+
         plt.savefig(os.path.join(output_dir, "figures", key + ".png"))
+        plt.clf()
+
+
+    # sys.exit()
+    for key in sizes:
+        size, mean, var, bins, width = calculateMean(sizes[key])
+
+
+        cumsum = np.cumsum(mean[::-1])[::-1]
+        sumstd = np.sqrt(np.cumsum(var[::-1])[::-1])
+        # prettyPlot(size, std, "Cumulative cluster size, mean", "nr cells, mean", "nr of cluster with number of cells > nrParticles", color=2)
+        # prettyPlot(size, cumsum, "Cumulative cluster size, mean", "nr cells, mean", "nr of cluster with number of cells > nrParticles", color=0, new_figure=False)
+
+        # plt.legend(["Mean", "Standard deviation"])
+
+        colors = np.zeros(len(cumsum), dtype=int)
+        ax, color = prettyBar(cumsum, index=bins[:-1], colors=colors, error=sumstd, width=width, linewidth=2)
+        ax.set_xticks(bins-width/2)
+        ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
+
+        plt.yscale('log')
+        plt.ylabel("Nr of clusters")
+        plt.xlabel("Cluster size", fontsize=16)
+        plt.title("Cumulative cluster size, mean")
+        # plt.xscale('log')
+        # plt.show()
+        plt.savefig(os.path.join(output_dir, "figures", key + "mean.png"))
 
 
 
 
 
 
-
-
-
-
-    sys.exit()
 
 
 
@@ -235,49 +287,169 @@ def results(output_dir="results", analysed_results_dir="obj"):
             keyV = re.sub(pattern, r"\1V", keyH)
             if keyV in sizes:
 
-                meanH = np.mean(sizes[keyH], 0)
-                meanV = np.mean(sizes[keyV], 0)
 
-                x, diff = fractionalDifference(meanH, meanV)
+                data_max = 0
+                data_min = 100000
+                for data in sizes[keyH]:
+                    if max(data) > data_max:
+                        data_max = max(data)
 
-                prettyPlot(x, diff, ylabel="Fractional difference H/V", xlabel="nr of particles", title="Fractional difference", color=0)
-                plt.savefig(os.path.join(output_dir, "figures", result.group(1) + "fractional.png"))
+                    if min(data) < data_min:
+                        data_min = min(data)
 
+                for data in sizes[keyV]:
+                    if max(data) > data_max:
+                        data_max = max(data)
 
+                    if min(data) < data_min:
+                        data_min = min(data)
 
-                prettyPlot(xrange(1, len(meanH) + 1), meanH, ylabel="nrParticles", xlabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=0)
-                prettyPlot(xrange(1, len(meanV) + 1), meanV, ylabel="nrParticles", xlabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=2, new_figure=False)
-                plt.ylim([min(min(meanH), min(meanV)), max(max(meanH), max(meanV))])
-                plt.xlim([1, max(len(meanH), len(meanV))])
-                plt.legend(["H", "V"])
-                plt.savefig(os.path.join(output_dir, "figures", result.group(1) + "compare.png"))
-
-
-
-
+                bins = np.linspace(data_min, data_max, nr_bins)
 
 
-# TODO look closer at this
-def fractionalDifference(meanH, meanV):
-    histHdata = (plt.histogram(meanH, nrBins)[0])
-    histVdata = (plt.histogram(meanV, nrBins)[0])
+                tmp_meanH = []
+                for data in sizes[keyH]:
+                    tmp_meanH.append(np.histogram(data, bins=bins)[0])
 
-    x = (plt.histogram(meanH, nrBins)[1][1:])
+                meanH = np.mean(tmp_meanH, 0)
+                varH = np.var(tmp_meanH, 0)
 
-    massH = np.zeros(nrBins)
-    massV = np.zeros(nrBins)
-    massH[-1] = histHdata[-1]
-    massV[-1] = histVdata[-1]
 
-    for i in range(nrBins-2, -1, -1):
-        massH[i] = histHdata[i] + massH[i+1]
-        massV[i] = histVdata[i] + massV[i+1]
+                tmp_meanV = []
+                for data in sizes[keyV]:
+                    tmp_meanV.append(np.histogram(data, bins=bins)[0])
 
-    tmp = np.abs(massV - massH)/massH.astype(float)
-    diff = (scipy.ndimage.filters.gaussian_filter(tmp, sigma))
+                meanV = np.mean(tmp_meanV, 0)
+                varV = np.var(tmp_meanV, 0)
 
-    return x, diff
 
+                tmp = (bins[1:] - bins[:-1])/2.
+                size = bins[1:] - tmp
+
+
+                cumsumH = np.cumsum(meanH[::-1])[::-1]
+                cumsumV = np.cumsum(meanV[::-1])[::-1]
+                sumvarV = np.sqrt(np.cumsum(varH[::-1])[::-1])
+                sumvarH = np.sqrt(np.cumsum(varV[::-1])[::-1])
+                sumstdV = np.sqrt(sumvarH)
+                sumstdH = np.sqrt(sumvarV)
+
+                # print sumH # nr of clusters
+                # print sumV # nr of clusters
+                # print t # Size of clusters
+
+                diff = (cumsumV - cumsumH)/cumsumV
+
+
+                # nonzeroV = np.where(cumsumV != 0)
+                # nonzeroH = np.where(cumsumH != 0)
+                # prettyPlot(size[nonzeroV], cumsumV[nonzeroV], "Cumulative cluster size, mean", "Cluster size", "Nr of cluster", color=0)
+                # prettyPlot(size[nonzeroH], cumsumH[nonzeroH], "Cumulative cluster size, mean", "Cluster size", "Nr of cluster", color=2, new_figure=False)
+
+
+                # # plt.plot(t, diff)
+                # plt.legend(["V", "H"])
+                # plt.yscale('log')
+                # plt.xscale('log')
+                # plt.savefig(os.path.join(output_dir, "figures", keyH[:-1] + "compare.png"))
+
+
+
+                width = bins[1] - bins[0]
+                colors = np.zeros(len(cumsumV), dtype=int)
+                ax, color = prettyBar(cumsumV, index=bins[:-1], colors=colors, error=sumstdV, width=width, linewidth=2)
+                ax, color = prettyBar(cumsumH, index=bins[:-1], colors=colors+4, error=sumstdH, width=width, linewidth=2, new_figure=False, alpha=0.6, error_kw=dict(ecolor=color[4], lw=2, capsize=10, capthick=2))
+                ax.set_xticks(bins-width/2)
+                ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
+
+                plt.yscale('log')
+                plt.legend(["V", "H"])
+                plt.ylabel("Nr of clusters")
+                plt.xlabel("Cluster size", fontsize=16)
+                plt.title("Cumulative cluster size, mean")
+
+                # plt.xscale('log')
+                # plt.show()
+                plt.savefig(os.path.join(output_dir, "figures", keyH[:-1] + "compare.png"))
+
+
+                width = bins[1] - bins[0]
+                colors = np.zeros(len(cumsumV), dtype=int)
+                ax, color = prettyBar(diff, index=bins[:-1], colors=colors, error=sumstdV, width=width, linewidth=2)
+                ax.set_xticks(bins-width/2)
+                ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
+
+                plt.yscale('log')
+                plt.legend(["V", "H"])
+                plt.ylabel("Nr of clusters")
+                plt.xlabel("Cluster size", fontsize=16)
+                plt.title("Cumulative cluster size, mean")
+
+                prettyPlot(size, diff, "Fractional difference, (V-H)/V", "CLuster size", "Fractional difference nr of cluster", color=0)
+
+
+                # plt.plot(t, diff)
+                plt.savefig(os.path.join(output_dir, "figures", keyH[:-1] + "difference.png"))
+
+
+                # sys.exit(1)
+
+                #     massH = np.zeros(nrBins)
+                #     massV = np.zeros(nrBins)
+                #     massH[-1] = histHdata[-1]
+                #     massV[-1] = histVdata[-1]
+                #
+                #     for i in range(nrBins-2, -1, -1):
+                #         massH[i] = histHdata[i] + massH[i+1]
+                #         massV[i] = histVdata[i] + massV[i+1]
+                #
+                #     tmp = np.abs(massV - massH)/massH.astype(float)
+
+
+                #
+                # meanH = np.mean(sizes[keyH], 0)
+                # meanV = np.mean(sizes[keyV], 0)
+                #
+                # x, diff = fractionalDifference(meanH, meanV)
+                #
+                # prettyPlot(x, diff, ylabel="Fractional difference H/V", xlabel="nr of particles", title="Fractional difference", color=0)
+                # plt.savefig(os.path.join(output_dir, "figures", result.group(1) + "fractional.png"))
+                #
+                #
+                #
+                # prettyPlot(xrange(1, len(meanH) + 1), meanH, ylabel="nrParticles", xlabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=0)
+                # prettyPlot(xrange(1, len(meanV) + 1), meanV, ylabel="nrParticles", xlabel="nr of cluster with number of particles > nrParticles", title="Cumulative cluster size", color=2, new_figure=False)
+                # plt.ylim([min(min(meanH), min(meanV)), max(max(meanH), max(meanV))])
+                # plt.xlim([1, max(len(meanH), len(meanV))])
+                # plt.legend(["H", "V"])
+                # # plt.savefig(os.path.join(output_dir, "figures", result.group(1) + "compare.png"))
+                # plt.show()
+                #
+
+
+
+#
+# # TODO look closer at this
+# def fractionalDifference(meanH, meanV):
+#     histHdata = (plt.histogram(meanH, nrBins)[0])
+#     histVdata = (plt.histogram(meanV, nrBins)[0])
+#
+#     x = (plt.histogram(meanH, nrBins)[1][1:])
+#
+#     massH = np.zeros(nrBins)
+#     massV = np.zeros(nrBins)
+#     massH[-1] = histHdata[-1]
+#     massV[-1] = histVdata[-1]
+#
+#     for i in range(nrBins-2, -1, -1):
+#         massH[i] = histHdata[i] + massH[i+1]
+#         massV[i] = histVdata[i] + massV[i+1]
+#
+#     tmp = np.abs(massV - massH)/massH.astype(float)
+#     diff = (scipy.ndimage.filters.gaussian_filter(tmp, sigma))
+#
+#     return x, diff
+#
 
 
 
