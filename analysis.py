@@ -136,7 +136,7 @@ def calculateMean(datasett):
 
     width = bins[1] - bins[0]
 
-    return size, mean, var, bins, width
+    return size, tmp_mean, var, bins, width
 
 
 
@@ -249,6 +249,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
     for key in sizes:
         size, mean, var, bins, width = calculateMean(sizes[key])
 
+        print mean
 
         cumsum = np.cumsum(mean[::-1])[::-1]
         sumstd = np.sqrt(np.cumsum(var[::-1])[::-1])
