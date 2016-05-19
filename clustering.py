@@ -68,12 +68,14 @@ class CHalos:
         self.b = b
         self.f = f
         self.nrLinking = 5000
+        self.average_distance = 0
 
         self.loadPositions()
 
         self.nrParticlesInHalos = 0
         self.percentageInHalos = 0
 
+        self.nrLinking = self.nrParticles
 
     def initialize(self):
         def limits(i):
@@ -92,6 +94,7 @@ class CHalos:
         self.volume = self.diffX*self.diffY*self.diffZ
         self.nrParticles = self.positions.shape[0]
 
+        self.average_distance = pow(self.volume/self.nrParticles, 1./3)
         self.linkingLength = self.b*pow(self.volume/self.nrParticles, 1./3)
 
 
@@ -163,7 +166,7 @@ class CHalos:
             self.findNeighbors(nextParticle, allFriends)
 
             if len(allFriends) >= self.minNrHalos:
-                    self.halos.append(CHalo(allFriends, len(self.halos)))
+                self.halos.append(CHalo(allFriends, len(self.halos)))
 
         self.update()
 
@@ -192,15 +195,14 @@ class CHalos:
         tmpNrParticles = self.nrParticles
         delta = 1
 
-        if self.NrParticles > self.nrLinking:
+        if self.nrParticles > self.nrLinking:
             tmpNrParticles = self.nrLinking
-            delta = self.NrParticles/self.nrLinking
+            delta = self.nrParticles/self.nrLinking
 
         LinkingLengths = []
         # Use all other particles or only the nrlinking subset
         next_particles = range(0, self.positions.shape[0])
-        for i in xrange(delta, self.NrParticles, delta):
-            #del next_particle[i]
+        for i in xrange(delta, tmpNrParticles, delta):
             prevTmpLinkingLength = self.distance(0, i)
             for next_particle in next_particles:
                 if next_particle != i:
