@@ -314,8 +314,8 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 #plot two mean values against each other
                 width = bins[1] - bins[0]
                 colors = np.zeros(len(cumsumV), dtype=int)
-                ax, color = prettyBar(cumsumV, index=bins[:-1], colors=colors, error=sumstdV, width=width, linewidth=2)
-                ax, color = prettyBar(cumsumH, index=bins[:-1], colors=colors+4, error=sumstdH, width=width, linewidth=2, new_figure=False, alpha=0.6, error_kw=dict(ecolor=color[4], lw=2, capsize=10, capthick=2))
+                ax = prettyBar(cumsumV, index=bins[:-1], error=sumstdV, width=width, linewidth=2)
+                ax = prettyBar(cumsumH, index=bins[:-1], error=sumstdH, width=width, linewidth=2, new_figure=False, alpha=0.6, error_kw=dict(ecolor=color[4], lw=2, capsize=10, capthick=2))
                 ax.set_xticks(bins-width/2)
                 ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
 
@@ -333,7 +333,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 # Plot fractional difference
                 width = bins[1] - bins[0]
                 colors = np.zeros(len(cumsumV), dtype=int)
-                ax, color = prettyBar(diff, index=bins[:-1], color=colors, error=stddiff, width=width, linewidth=2)
+                ax = prettyBar(diff, index=bins[:-1], error=stddiff, width=width, linewidth=2)
                 ax.set_xticks(bins-width/2)
                 ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
 
