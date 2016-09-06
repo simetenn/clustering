@@ -268,6 +268,8 @@ class CHalos:
         ax.set_ylabel('Y-position [um]')
         ax.set_zlabel('Z-position [um]')
         ax.set_title("Halos")
+        ax.set_xlim(self.positions[:, 0].min(), self.positions[:, 0].max())
+
         plt.savefig(name)
         # plt.show()
 
