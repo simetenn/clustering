@@ -8,6 +8,8 @@ import argparse
 import time
 import sys
 
+from mpl_toolkits.mplot3d import Axes3D
+
 sys.setrecursionlimit(50000)
 
 def system(cmd, verbose=1):
@@ -267,7 +269,7 @@ class CHalos:
         ax.set_zlabel('Z-position [um]')
         ax.set_title("Halos")
         plt.savefig(name)
-        plt.show()
+        # plt.show()
 
 
 
@@ -286,7 +288,7 @@ class CHalos:
         ax.set_zlabel('Z-position [um]')
         ax.set_title("Particles")
         plt.savefig(name)
-        plt.show()
+        # plt.show()
 
 if __name__ == "__main__":
 
@@ -308,7 +310,5 @@ if __name__ == "__main__":
 
     #halos.save("outHalos.dat")
     halos.printInformation()
-    print halos.linkingLength
     halos.plotParticles("particles.png")
     halos.plotHalos("halos.png")
-    print halos.linkingLength

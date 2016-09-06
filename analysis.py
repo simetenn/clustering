@@ -443,9 +443,6 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
 
 
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Perform a clustering analysis")
     parser.add_argument("analysed_results_dir", help="Analysed results folder")
