@@ -232,6 +232,13 @@ def results(output_dir="results", analysed_results_dir="obj"):
         # prettyPlot(size, cumsum, "Cumulative cluster size, mean", "nr cells, mean", "nr of cluster with number of cells > nrParticles", color=0, new_figure=False)
 
         # plt.legend(["Mean", "Standard deviation"])
+        max_sizes = []
+        for size in sizes[key]:
+            max_sizes.append(max(size))
+        max_size = max(max_sizes)
+
+        bins = (bins/max_size)*100
+        width = (width/max_size)*100
 
         ax = prettyBar(cumsum, index=bins[:-1], color=0, nr_hues=2, error=sumstd, width=width, linewidth=2)
         ax.set_xticks(bins-width/2)
@@ -239,7 +246,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
         plt.yscale('log')
         plt.ylabel("Nr of clusters")
-        plt.xlabel("Cluster size", fontsize=16)
+        plt.xlabel("Cluster size [\% of max cluster size {}]".format(max_size), fontsize=16)
         plt.title("Cumulative cluster size, mean")
 
         plt.savefig(os.path.join(output_dir, "figures", key + "mean.png"))
@@ -308,8 +315,9 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
                 stddiff = diff*np.sqrt(sumstdV**2/cumsumV**2 + sumstdH**2/cumsumH**2)
 
-
                 #plot two mean values against each other
+                bins = (bins/data_max)*100
+
                 width = bins[1] - bins[0]
                 ax = prettyBar(cumsumV, index=bins[:-1], color=0, nr_hues=2, error=sumstdV, width=width, linewidth=2)
                 ax = prettyBar(cumsumH, index=bins[:-1], color=4, nr_hues=6, error=sumstdH, width=width, linewidth=2,
@@ -321,7 +329,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 plt.yscale('log')
                 plt.legend(["V", "H"])
                 plt.ylabel("Nr of clusters")
-                plt.xlabel("Cluster size", fontsize=16)
+                plt.xlabel("Cluster size [\% of max cluster size {}]".format(data_max), fontsize=16)
                 plt.title("Cumulative cluster size, mean")
 
                 plt.savefig(os.path.join(output_dir, "figures", keyH[:-1] + "compare.png"))
@@ -337,7 +345,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
 
                 plt.ylabel("Fractional difference nr of cluster")
-                plt.xlabel("Cluster size", fontsize=16)
+                plt.xlabel("Cluster size [\% of max cluster size {}]".format(data_max), fontsize=16)
                 plt.title("Fractional difference, (V-H)/V")
 
                 # prettyPlot(size, diff, "Fractional difference, (V-H)/V", "CLuster size", "Fractional difference nr of cluster", color=0)

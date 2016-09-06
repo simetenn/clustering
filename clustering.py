@@ -269,6 +269,8 @@ class CHalos:
         ax.set_zlabel('Z-position [um]')
         ax.set_title("Halos")
         ax.set_xlim(self.positions[:, 0].min(), self.positions[:, 0].max())
+        ax.set_ylim(self.positions[:, 1].min(), self.positions[:, 1].max())
+        ax.set_zlim(self.positions[:, 2].min(), self.positions[:, 2].max())
 
         plt.savefig(name)
         # plt.show()
@@ -289,6 +291,11 @@ class CHalos:
         ax.set_ylabel('Y-position [um]')
         ax.set_zlabel('Z-position [um]')
         ax.set_title("Particles")
+
+        ax.set_xlim(self.positions[:, 0].min(), self.positions[:, 0].max())
+        ax.set_ylim(self.positions[:, 1].min(), self.positions[:, 1].max())
+        ax.set_zlim(self.positions[:, 2].min(), self.positions[:, 2].max())
+
         plt.savefig(name)
         # plt.show()
 
