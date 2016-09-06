@@ -191,9 +191,11 @@ def results(output_dir="results", analysed_results_dir="obj"):
         data_min = 10000
 
         legend = []
+        nr_hues = len(sizes[key])
         for data in sizes[key]:
             t = range(1, len(data) + 1)
-            prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=c, new_figure=False)
+
+            prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=c, nr_hues=nr_hues, new_figure=False)
 
             if max(data) > data_max:
                 data_max = max(data)
@@ -206,7 +208,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
             legend.append("Datasett {}".format(i))
             i += 1
-            c += 2
+            c += 1
 
         plt.yscale('log')
         plt.xscale('log')
@@ -232,7 +234,8 @@ def results(output_dir="results", analysed_results_dir="obj"):
         # plt.legend(["Mean", "Standard deviation"])
 
         colors = np.zeros(len(cumsum), dtype=int)
-        ax, color = prettyBar(cumsum, index=bins[:-1], colors=colors, error=sumstd, width=width, linewidth=2)
+        print colors
+        ax = prettyBar(cumsum, index=bins[:-1], error=sumstd, width=width, linewidth=2)
         ax.set_xticks(bins-width/2)
         ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
 
@@ -253,6 +256,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
     # Calculate fractionalDifference between H and V
     pattern = re.compile(r"(.*)(H)$")
+
 
     for keyH in sizes:
         result = pattern.search(keyH)
@@ -329,7 +333,7 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 # Plot fractional difference
                 width = bins[1] - bins[0]
                 colors = np.zeros(len(cumsumV), dtype=int)
-                ax, color = prettyBar(diff, index=bins[:-1], colors=colors, error=stddiff, width=width, linewidth=2)
+                ax, color = prettyBar(diff, index=bins[:-1], color=colors, error=stddiff, width=width, linewidth=2)
                 ax.set_xticks(bins-width/2)
                 ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
 
