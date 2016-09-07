@@ -287,6 +287,57 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 bins = np.linspace(data_min, data_max, nr_bins)
 
 
+
+
+
+                # plot cumulative cluster size H and V from same animal in the same plot
+                t_max = 0
+                t_min = 10000
+                nr_hues = 2
+                prettyPlot([data_min-1], [t_min-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_hues=nr_hues, new_figure=False)
+                prettyPlot([data_min-1], [t_min-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_hues=nr_hues, new_figure=False)
+                plt.legend(["V", "H"])
+
+
+                for data in sizes[keyV]:
+                    t = range(1, len(data) + 1)
+
+                    prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_hues=nr_hues, new_figure=False)
+
+                    if max(t) > t_max:
+                        t_max = max(t)
+                    if min(t) < t_min:
+                        t_min = min(t)
+
+                    i += 1
+
+                for data in sizes[keyH]:
+                    t = range(1, len(data) + 1)
+
+                    prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_hues=nr_hues, new_figure=False)
+
+                    if max(t) > t_max:
+                        t_max = max(t)
+                    if min(t) < t_min:
+                        t_min = min(t)
+
+                    i += 1
+
+                plt.yscale('log')
+                plt.xscale('log')
+                plt.ylim([t_min, t_max])
+                plt.xlim([data_min, data_max])
+
+
+                plt.savefig(os.path.join(output_dir, "figures", keyH[:-1] + "combined.png"))
+                plt.close()
+
+
+
+
+
+
+
                 meanH = []
                 for data in sizes[keyH]:
                     meanH.append(np.histogram(data, bins=bins)[0])
