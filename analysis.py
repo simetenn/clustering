@@ -1,5 +1,5 @@
 from clustering import CHalos
-from uncertainpy import prettyPlot, prettyBar, get_colormap
+from uncertainpy import prettyPlot, prettyBar, get_colormap, spines_edge_color, set_style
 
 import os
 import re
@@ -254,11 +254,6 @@ def results(output_dir="results", analysed_results_dir="obj"):
 
 
 
-
-
-
-
-
     # Calculate fractionalDifference between H and V
     pattern = re.compile(r"(.*)(H)$")
 
@@ -405,100 +400,135 @@ def results(output_dir="results", analysed_results_dir="obj"):
                 plt.close()
 
 
-    # # Calculate fractionalDifference between H and V
-    # pattern = re.compile(r"^(.*)(1500)(.*)(H)$")
-    #
-    # print pattern
-    #
-    # for keyH1500 in sizes:
-    #     print keyH1500
-    #     result = pattern.search(keyH1500)
-    #
-    #     if result is not None:
-    #         keyV1500 = re.sub(pattern, r"\1V", keyH1500)
-    #         print keyV1500
-    #         if keyV1500 in sizes:
-    #             data_max = 0
-    #             data_min = 100000
-    #             for data in sizes[keyH1500]:
-    #                 if max(data) > data_max:
-    #                     data_max = max(data)
-    #
-    #                 if min(data) < data_min:
-    #                     data_min = min(data)
-    #
-    #             for data in sizes[keyV1500]:
-    #                 if max(data) > data_max:
-    #                     data_max = max(data)
-    #
-    #                 if min(data) < data_min:
-    #                     data_min = min(data)
-    #
-    #             bins = np.linspace(data_min, data_max, nr_bins)
-    #
-    #
-    #             meanH = []
-    #             for data in sizes[keyH1500]:
-    #                 meanH.append(np.histogram(data, bins=bins)[0])
-    #
-    #             meanH = np.array(meanH)
-    #
-    #
-    #             meanV = []
-    #             for data in sizes[keyV1500]:
-    #                 meanV.append(np.histogram(data, bins=bins)[0])
-    #
-    #             meanV = np.array(meanV)
-    #
-    #             width = bins[1] - bins[0]
-    #             cumsumAllH = np.cumsum(meanH[:, ::-1], 1)[:, ::-1]
-    #             cumsumAllV = np.cumsum(meanV[:, ::-1], 1)[:, ::-1]
-    #
-    #
-    #             cumsumH = np.mean(cumsumAllH, 0)
-    #             cumsumV = np.mean(cumsumAllV, 0)
-    #             sumstdV = np.std(cumsumAllV, 0)
-    #             sumstdH = np.std(cumsumAllH, 0)
-    #
-    #
-    #             diff = 1 - cumsumH/cumsumV.astype(float)
-    #
-    #             stddiff = diff*np.sqrt(sumstdV**2/cumsumV**2 + sumstdH**2/cumsumH**2)
-    #
-    #
-    #             #plot two mean values against each other
-    #             width = bins[1] - bins[0]
-    #             colors = np.zeros(len(cumsumV), dtype=int)
-    #             ax, color = prettyBar(cumsumV, index=bins[:-1], colors=colors, error=sumstdV, width=width, linewidth=2)
-    #             ax, color = prettyBar(cumsumH, index=bins[:-1], colors=colors+4, error=sumstdH, width=width, linewidth=2, new_figure=False, alpha=0.6, error_kw=dict(ecolor=color[4], lw=2, capsize=10, capthick=2))
-    #             ax.set_xticks(bins-width/2)
-    #             ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
-    #
-    #             plt.yscale('log')
-    #             plt.legend(["V", "H"])
-    #             plt.ylabel("Nr of clusters")
-    #             plt.xlabel("Cluster size", fontsize=16)
-    #             plt.title("Cumulative cluster size, mean")
-    #
-    #             plt.savefig(os.path.join(output_dir, "figures", keyH1500[:-1] + "compare_both.png"))
-    #
-    #
-    #
-    #
-    #             # Plot fractional difference
-    #             width = bins[1] - bins[0]
-    #             colors = np.zeros(len(cumsumV), dtype=int)
-    #             ax, color = prettyBar(diff, index=bins[:-1], colors=colors, error=stddiff, width=width, linewidth=2)
-    #             ax.set_xticks(bins-width/2)
-    #             ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
-    #
-    #             plt.ylabel("Fractional difference nr of cluster")
-    #             plt.xlabel("Cluster size", fontsize=16)
-    #             plt.title("Fractional difference, (V-H)/V")
-    #
-    #             # prettyPlot(size, diff, "Fractional difference, (V-H)/V", "CLuster size", "Fractional difference nr of cluster", color=0)
-    #
-    #             plt.savefig(os.path.join(output_dir, "figures", keyH1500[:-1] + "difference_both.png"))
+
+
+
+
+def plot_grid(output_dir="results", analysed_results_dir="obj"):
+    output_dir = os.path.join(output_dir, analysed_results_dir)
+    if not os.path.isdir(os.path.join(output_dir, "figures")):
+        os.makedirs(os.path.join(output_dir, "figures"))
+
+
+    sizes = load_obj("sizes", analysed_results_dir)
+
+
+
+    nr_plots = len(sizes.keys())/2
+    grid_size = np.ceil(np.sqrt(nr_plots))
+    grid_x_size = int(grid_size)
+    grid_y_size = int(np.ceil(nr_plots/float(grid_x_size)))
+
+    fig, axes = plt.subplots(nrows=grid_y_size, ncols=grid_x_size)
+
+    # Add a larger subplot to use to set a common xlabel and ylabel
+    set_style("white")
+    ax = fig.add_subplot(111, zorder=-10)
+    spines_edge_color(ax, edges={"top": "None", "bottom": "None",
+                                 "right": "None", "left": "None"})
+    ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
+    ax.set_xlabel("Cumulative cluster size")
+    ax.set_ylabel("Cluster size")
+    j = 0
+
+
+
+    # Calculate fractionalDifference between H and V
+    pattern = re.compile(r"(.*)(H)$")
+
+
+    for keyH in sizes:
+        result = pattern.search(keyH)
+        if result is not None:
+            keyV = re.sub(pattern, r"\1V", keyH)
+            if keyV in sizes:
+                data_max = 0
+                data_min = 100000
+                for data in sizes[keyH]:
+                    if max(data) > data_max:
+                        data_max = max(data)
+
+                    if min(data) < data_min:
+                        data_min = min(data)
+
+                for data in sizes[keyV]:
+                    if max(data) > data_max:
+                        data_max = max(data)
+
+                    if min(data) < data_min:
+                        data_min = min(data)
+
+
+                nx = j % grid_x_size
+                ny = int(np.floor(j/float(grid_x_size)))
+
+                if grid_y_size == 1:
+                    ax = axes[nx]
+                else:
+                    ax = axes[ny][nx]
+
+
+                t_max = 0
+                t_min = 10000
+                nr_hues = 2
+                prettyPlot([data_min-1], [t_min-1], color=0, nr_hues=nr_hues, new_figure=False, ax=ax)
+                prettyPlot([data_min-1], [t_min-1], color=1, nr_hues=nr_hues, new_figure=False, ax=ax)
+                plt.legend(["V", "H"])
+
+
+                for data in sizes[keyV]:
+                    t = range(1, len(data) + 1)
+
+                    prettyPlot(data, t, color=0, nr_hues=nr_hues, ax=ax)
+
+                    if max(t) > t_max:
+                        t_max = max(t)
+                    if min(t) < t_min:
+                        t_min = min(t)
+
+                for data in sizes[keyH]:
+                    t = range(1, len(data) + 1)
+
+                    prettyPlot(data, t, color=1, nr_hues=nr_hues, ax=ax)
+
+                    if max(t) > t_max:
+                        t_max = max(t)
+                    if min(t) < t_min:
+                        t_min = min(t)
+
+                tmp_title = keyH[:-3].split("_")
+                title = tmp_title[0] + " " +  tmp_title[1] + "\n" + tmp_title[2]
+                ax.set_title(title, fontsize=10)
+                ax.set_yscale('log')
+                ax.set_xscale('log')
+                ax.set_ylim([t_min, t_max])
+                ax.set_xlim([data_min, data_max])
+
+                for tick in ax.get_xticklabels():
+                    tick.set_rotation(-30)
+
+                ax.tick_params(labelsize=10)
+
+                j += 1
+
+    for i in xrange(j, grid_x_size*grid_y_size):
+        nx = i % grid_x_size
+        ny = int(np.floor(i/float(grid_x_size)))
+
+        if grid_y_size == 1:
+            ax = axes[nx]
+        else:
+            ax = axes[ny][nx]
+
+        ax.axis("off")
+
+
+    plt.suptitle("Cumulative cluster size", fontsize=18)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    plt.savefig(os.path.join(output_dir, "figures", "cumulative_grid.png"))
+    plt.close()
+
 
 
 
@@ -516,6 +546,7 @@ if __name__ == "__main__":
 
     if args.results:
         results(analysed_results_dir=args.analysed_results_dir)
+        plot_grid(analysed_results_dir=args.analysed_results_dir)
 
     if args.linking_lengths:
         calculateLinkingLength(data_folder)

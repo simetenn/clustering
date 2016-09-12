@@ -257,6 +257,8 @@ class CHalos:
         for halo in self.halos:
             tmpHalo + halo
 
+
+
         ax.scatter(self.positions[tmpHalo.indices, 0],
                    self.positions[tmpHalo.indices, 1],
                    self.positions[tmpHalo.indices, 2],
@@ -280,11 +282,15 @@ class CHalos:
     def plotParticles(self, name):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
+
+        color = self.positions[:, -1].copy()
+        color[self.positions[:, -1] >= 0] = 0
+
         ax.scatter(self.positions[:, 0],
                    self.positions[:, 1],
                    self.positions[:, 2],
                    s=8,
-                   c=self.positions[:, -1],
+                   c=color,
                    linewidths=0.1)
 
         ax.set_xlabel('X-position [um]')
@@ -317,7 +323,11 @@ if __name__ == "__main__":
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
+    savename = args.filename
+    savename = savename.replace(" ", "-")
+    savename = savename.replace("/", "-")
+
     #halos.save("outHalos.dat")
     halos.printInformation()
-    halos.plotParticles("particles.png")
-    halos.plotHalos("halos.png")
+    halos.plotParticles(savename + "-particles.png")
+    halos.plotHalos(savename + "-halos.png")
