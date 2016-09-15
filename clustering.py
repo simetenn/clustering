@@ -147,9 +147,6 @@ class CHalos:
         for halo in self.halos:
             sizes.append(halo.size)
 
-        # sizes = [10, 213, 22, 123, 10, 432]
-        # sizes = np.array(sizes)*np.random.normal(1, 1)
-
         return np.sort(sizes)[::-1]
 
 
@@ -231,10 +228,37 @@ class CHalos:
                 line = ""
                 for position in self.positions[particle]:
                     line += delimiter + str(position)
-                    line += "\n"
-                    f.write(line)
-                    f.close()
+                line += "\n"
+                f.write(line)
+        f.close()
 
+
+    def saveHalosBlender(self, name, delimiter=" "):
+        f = open(name, "w")
+        f.write(str(self.nrParticlesInHalos) + "\n")
+        f.write("Halos\n")
+        for halo in self.halos:
+            for particle in halo.indices:
+                # line = str(self.positions[particle][-1]) + delimiter
+                line = str("Be") + delimiter
+                for position in self.positions[particle][:-1]:
+                    line += delimiter + str(position)
+                line += "\n"
+                f.write(line)
+        f.close()
+
+    def saveParticlesBlender(self, name):
+        f = open(name, "w")
+        f.write(str(self.nrParticles) + "\n")
+        f.write("Particles\n")
+        for particle in self.positions:
+            # line = str(self.positions[particle][-1]) + delimiter
+            line = str("C ")
+            for position in particle:
+                line += " " + str(position)
+            line += "\n"
+            f.write(line)
+        f.close()
 
 
     def printInformation(self):
@@ -327,7 +351,8 @@ if __name__ == "__main__":
     savename = savename.replace(" ", "-")
     savename = savename.replace("/", "-")
 
-    #halos.save("outHalos.dat")
+    halos.saveHalosBlender("halos.xyz")
+    halos.saveParticlesBlender("particles.xyz")
     halos.printInformation()
     halos.plotParticles(savename + "-particles.png")
     halos.plotHalos(savename + "-halos.png")
