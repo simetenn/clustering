@@ -1,5 +1,5 @@
 from clustering import CHalos
-from uncertainpy import prettyPlot, prettyBar, get_colormap, spines_edge_color, set_style
+from prettyplot import prettyPlot, prettyBar, get_colormap, spines_edge_color, set_style
 
 import os
 import re
@@ -123,7 +123,7 @@ def allFOF(foldername, analysed_results_dir="obj"):
     save_obj(percentageInHalos, "percentageInHalos", analysed_results_dir)
     save_obj(nrParticles, "nrParticles", analysed_results_dir)
 
-    print "--- %s seconds ---" % (time.time() - start_time)
+    print("--- {} seconds ---".format((time.time() - start_time)))
 
 
 def calculateMean(datasett):

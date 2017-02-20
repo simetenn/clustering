@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('GTKAgg')
+# matplotlib.use('GTKAgg')
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,20 +15,20 @@ sys.setrecursionlimit(50000)
 def system(cmd, verbose=1):
     """Run system command cmd using subprocess module."""
     if verbose >= 1:
-        print cmd
+        print(cmd)
 
     try:
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         if output:
             if verbose >= 2:
-                print output
+                print(output)
 
 
     except subprocess.CalledProcessError as e:
         if verbose >= 1:
-            print """Command: \n%s \nfailed""" % cmd
-            print 'Return code:', e.returncode
-            print e.output
+            print("""Command: \n%s \nfailed""" % cmd)
+            print('Return code:', e.returncode)
+            print(e.output)
 
 
 class CHalo:
@@ -103,7 +103,7 @@ class CHalos:
 
     def loadPositions(self):
 
-        print "Loading: " + self.name
+        print("Loading: " + self.name)
         if self.name.split(".")[-1] == "xls":
             system("libreoffice --headless --convert-to csv " + self.name.replace(" ", "\\ "), 0)
 
@@ -154,7 +154,7 @@ class CHalos:
         """
         Finding halos with the FOF-method
         """
-        print "Calculating FOF"
+        print("Calculating FOF")
 
         self.nextParticles = range(0, self.positions.shape[0])
         while (len(self.nextParticles) > 0):
@@ -262,14 +262,14 @@ class CHalos:
 
 
     def printInformation(self):
-        print "--------------------------------------------------------"
-        print self.name
-        print "--------------------------------------------------------"
-        print "Nr of Particles:			 ", self.nrParticles
-        print "Nr of Halos:			 ", self.nrHalos
-        print "Nr of Particles in Halos:	 ", self.nrParticlesInHalos
-        print "Percentage of Particles in Halos: ", self.percentageInHalos
-        print "--------------------------------------------------------"
+        print("--------------------------------------------------------")
+        print(self.name)
+        print("--------------------------------------------------------")
+        print("Nr of Particles:			 ", self.nrParticles)
+        print("Nr of Halos:			 ", self.nrHalos)
+        print("Nr of Particles in Halos:	 ", self.nrParticlesInHalos)
+        print("Percentage of Particles in Halos: ", self.percentageInHalos)
+        print("--------------------------------------------------------")
 
 
 
