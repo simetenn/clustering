@@ -713,6 +713,7 @@ class Analysis:
                     ax.set_xlim([min_size, max_size])
                     ax.set_ylim([min_cumulative, max_cumulative])
 
+                    line = ax.plot(min_size-1, min_cumulative-1)
 
                     for tick in ax.xaxis.get_major_ticks():
                         tick.label.set_rotation(-25)
