@@ -187,6 +187,8 @@ class Analysis:
         return size, np.array(mean), bins, width
 
 
+
+
     def save_to_file(self):
         for key in self.sizes:
             f = open(os.path.join(self.output_dir, key + ".txt"), "w")
@@ -196,6 +198,8 @@ class Analysis:
             f.write("self.nrParticlesInHalos: {} {}\n".format(np.mean(self.nrParticlesInHalos[key]), scipy.stats.sem(self.nrParticlesInHalos[key])))
             f.write("percentageInHalos:  {} {}\n".format(np.mean(self.percentageInHalos[key]), scipy.stats.sem(self.percentageInHalos[key])))
             f.close()
+
+
 
     def plot(self):
         """Plotting all data"""
@@ -432,131 +436,17 @@ class Analysis:
 
 
 
-
-    def plot_grid_old(self):
-        nr_plots = len(self.sizes.keys())/2
-        grid_size = np.ceil(np.sqrt(nr_plots))
-        grid_x_size = int(grid_size)
-        grid_y_size = int(np.ceil(nr_plots/float(grid_x_size)))
-
-        fig, axes = plt.subplots(nrows=grid_y_size, ncols=grid_x_size)
-
-        # Add a larger subplot to use to set a common xlabel and ylabel
-        set_style("white")
-        ax = fig.add_subplot(111, zorder=-10)
-        spines_color(ax, edges={"top": "None", "bottom": "None",
-                                     "right": "None", "left": "None"})
-        ax.tick_params(labelcolor="w", top="off", bottom="off", left="off", right="off")
-        ax.set_xlabel("Cumulative cluster size")
-        ax.set_ylabel("Cluster size")
-        j = 0
-
-
-
-        # Calculate fractionalDifference between H and V
-        pattern = re.compile(r"(.*)(H)$")
-
-
-        for keyH in self.sizes:
-            result = pattern.search(keyH)
-            if result is not None:
-                keyV = re.sub(pattern, r"\1V", keyH)
-                if keyV in self.sizes:
-                    data_max = 0
-                    data_min = 100000
-                    for data in self.sizes[keyH]:
-                        if max(data) > data_max:
-                            data_max = max(data)
-
-                        if min(data) < data_min:
-                            data_min = min(data)
-
-                    for data in self.sizes[keyV]:
-                        if max(data) > data_max:
-                            data_max = max(data)
-
-                        if min(data) < data_min:
-                            data_min = min(data)
-
-
-                    nx = j % grid_x_size
-                    ny = int(np.floor(j/float(grid_x_size)))
-
-                    if grid_y_size == 1:
-                        ax = axes[nx]
-                    else:
-                        ax = axes[ny][nx]
-
-
-                    t_max = 0
-                    t_min = 10000
-                    nr_colors = 2
-                    prettyPlot([data_min-1], [t_min-1], color=0, nr_colors=nr_colors, new_figure=False, ax=ax, style="seaborn-white")
-                    prettyPlot([data_min-1], [t_min-1], color=1, nr_colors=nr_colors, new_figure=False, ax=ax, style="seaborn-white")
-                    plt.legend(["V", "H"])
-
-
-                    for data in self.sizes[keyV]:
-                        t = range(1, len(data) + 1)
-
-                        prettyPlot(data, t, color=0, nr_colors=nr_colors, ax=ax)
-
-                        if max(t) > t_max:
-                            t_max = max(t)
-                        if min(t) < t_min:
-                            t_min = min(t)
-
-                    for data in self.sizes[keyH]:
-                        t = range(1, len(data) + 1)
-
-                        prettyPlot(data, t, color=1, nr_colors=nr_colors, ax=ax, style="seaborn-white")
-
-                        if max(t) > t_max:
-                            t_max = max(t)
-                        if min(t) < t_min:
-                            t_min = min(t)
-
-                    tmp_title = keyH[:-3].split("_")
-                    title = tmp_title[0] + " " + tmp_title[1] + "\n" + tmp_title[2]
-                    ax.set_title(title, fontsize=10)
-                    ax.set_yscale("log")
-                    ax.set_xscale("log")
-                    ax.set_ylim([t_min, t_max])
-                    ax.set_xlim([data_min, data_max])
-
-                    for tick in ax.get_xticklabels():
-                        tick.set_rotation(-30)
-
-                    ax.tick_params(labelsize=10)
-
-                    j += 1
-
-        for i in xrange(j, grid_x_size*grid_y_size):
-            nx = i % grid_x_size
-            ny = int(np.floor(i/float(grid_x_size)))
-
-            if grid_y_size == 1:
-                ax = axes[nx]
-            else:
-                ax = axes[ny][nx]
-
-            ax.axis("off")
-
-
-        plt.suptitle("Cumulative cluster size", fontsize=18)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.85)
-        plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_grid.png"))
-        plt.close()
-
-
-
     def createInterpolation(self):
         self.interpolations = {}
         self.cumulative = {}
         self.unique_sizes = {}
         self.counts = {}
 
+        max_size = []
+        for key in self.sizes:
+            for experiment in self.sizes[key]:
+                max_size.append(max(experiment))
+        max_size = max(max_size)
 
         for key in self.sizes:
             self.interpolations[key] = []
@@ -568,6 +458,7 @@ class Analysis:
 
                 sizes, counts = np.unique(experiment, return_counts=True)
                 cumulative = np.cumsum(counts[::-1])[::-1]
+
 
 
                 interpolation = scipy.interpolate.InterpolatedUnivariateSpline(sizes, cumulative, k=1)
@@ -636,7 +527,8 @@ class Analysis:
             plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_" + key + "_interpolated.png"))
             plt.close()
 
-    def plot_grid2(self):
+
+    def plotGrid(self):
 
         nr_plots = len(self.sizes.keys())/2
         grid_size = np.ceil(np.sqrt(nr_plots))
@@ -648,7 +540,6 @@ class Analysis:
         fig, axes = plt.subplots(nrows=grid_y_size, ncols=grid_x_size)
 
         # Add a larger subplot to use to set a common xlabel and ylabel
-
         j = 0
 
         # Calculate fractionalDifference between H and V
@@ -751,15 +642,76 @@ class Analysis:
         plt.suptitle("Cumulative cluster size", fontsize=18)
         plt.tight_layout()
         plt.subplots_adjust(top=0.9, bottom=0.12, left=0.1, right=0.9)
-        # plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_grid.png"))
-        # plt.close()
-
-
-
         fig.text(0.5, 0.02, "Cumulative cluster size", ha="center", size=16)
         fig.text(0.02, 0.5, "Cluster size", va="center", rotation="vertical", size=16)
+        plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_grid.png"))
+        plt.close()
 
-        plt.show()
+
+
+    def plotCompare(self):
+
+        pattern = re.compile(r"(.*)(H)$")
+
+        for keyH in self.sizes:
+            result = pattern.search(keyH)
+            if result is not None:
+                keyV = re.sub(pattern, r"\1V", keyH)
+                if keyV in self.sizes:
+
+
+                    # Find min max
+                    max_size = []
+                    min_size = []
+                    for size in self.unique_sizes[keyH]:
+                        max_size.append(size.max())
+                        min_size.append(size.min())
+
+                    for size in self.unique_sizes[keyV]:
+                        max_size.append(size.max())
+                        min_size.append(size.min())
+
+
+                    max_cumulative = []
+                    min_cumulative = []
+                    for cumulative in self.cumulative[keyV]:
+                        max_cumulative.append(cumulative.max())
+                        min_cumulative.append(cumulative.min())
+
+
+                    max_size = max(max_size)
+                    min_size = min(min_size)
+
+                    max_cumulative = max(max_cumulative)
+                    min_cumulative = min(min_cumulative)
+
+
+                    nr_colors = 2
+                    create_figure(style="seaborn-white", nr_colors=nr_colors)
+                    prettyPlot([min_size-1], [min_cumulative-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_colors=nr_colors, new_figure=False)
+                    prettyPlot([min_size-1], [min_cumulative-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_colors=nr_colors, new_figure=False)
+                    plt.legend(["V", "H"])
+
+
+
+                    for size, cumulative in zip(self.unique_sizes[keyV], self.cumulative[keyV]):
+                        prettyPlot(size, cumulative, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_colors=nr_colors, new_figure=False)
+
+                    for size, cumulative in zip(self.unique_sizes[keyH], self.cumulative[keyH]):
+                        prettyPlot(size, cumulative, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_colors=nr_colors, new_figure=False)
+
+
+                    plt.xlim([min_size, max_size])
+                    plt.ylim([min_cumulative, max_cumulative])
+
+                    plt.yscale("log")
+                    plt.xscale("log")
+
+                    plt.savefig(os.path.join(self.output_dir, "figures", keyH[:-1] + "combined.png"))
+                    plt.close()
+
+
+
 
     def plotCumulative(self):
         for key in self.unique_sizes:
@@ -818,7 +770,7 @@ class Analysis:
         self.plot()
         self.mean()
         self.fractionalDifferenceHV()
-        self.plot_grid()
+        self.plotGrid()
 
 
 
@@ -848,7 +800,8 @@ if __name__ == "__main__":
         # analysis.plotCumulative()
         # analysis.plotCumulativeInterpolation()
         # analysis.plot()
-        analysis.plot_grid2()
+        # analysis.plotGrid()
+        analysis.plotCompare()
 
     if args.linking_lengths:
         calculateLinkingLength(data_folder)
