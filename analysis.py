@@ -1,5 +1,5 @@
 from clustering import CHalos
-from prettyplot import prettyPlot, prettyBar, get_colormap, spines_color, set_style, create_figure
+from prettyplot import prettyPlot, prettyBar, get_colormap, spines_color, set_style, create_figure, get_current_colormap
 
 import os
 import re
@@ -644,7 +644,7 @@ class Analysis:
         grid_y_size = int(np.ceil(nr_plots/float(grid_x_size)))
 
         nr_colors = 2
-        set_style(style="seaborn-darkgrid", nr_colors=nr_colors)
+        set_style(style="seaborn-white", nr_colors=nr_colors)
         fig, axes = plt.subplots(nrows=grid_y_size, ncols=grid_x_size)
 
         # Add a larger subplot to use to set a common xlabel and ylabel
@@ -713,7 +713,6 @@ class Analysis:
                     ax.set_xlim([min_size, max_size])
                     ax.set_ylim([min_cumulative, max_cumulative])
 
-                    line = ax.plot(min_size-1, min_cumulative-1)
 
                     for tick in ax.xaxis.get_major_ticks():
                         tick.label.set_rotation(-25)
@@ -741,14 +740,20 @@ class Analysis:
             ax.axis("off")
 
 
+
+        colormap = get_current_colormap()
+
+        lineV = ax.plot(min_size-1, min_cumulative-1, color=colormap[0])[0]
+        lineH = ax.plot(min_size-1, min_cumulative-1, color=colormap[1])[0]
+
+        plt.figlegend([lineV, lineH], ["V", "H"], (0.75, 0.2))
+
         plt.suptitle("Cumulative cluster size", fontsize=18)
         plt.tight_layout()
         plt.subplots_adjust(top=0.9, bottom=0.12, left=0.1, right=0.9)
         # plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_grid.png"))
         # plt.close()
 
-
-        # plt.legend(["V", "H"])
 
 
         fig.text(0.5, 0.02, "Cumulative cluster size", ha="center", size=16)
