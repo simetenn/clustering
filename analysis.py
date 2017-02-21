@@ -433,7 +433,7 @@ class Analysis:
 
 
 
-    def plot_grid(self):
+    def plot_grid_old(self):
         nr_plots = len(self.sizes.keys())/2
         grid_size = np.ceil(np.sqrt(nr_plots))
         grid_x_size = int(grid_size)
@@ -444,7 +444,7 @@ class Analysis:
         # Add a larger subplot to use to set a common xlabel and ylabel
         set_style("white")
         ax = fig.add_subplot(111, zorder=-10)
-        spines_edge_color(ax, edges={"top": "None", "bottom": "None",
+        spines_color(ax, edges={"top": "None", "bottom": "None",
                                      "right": "None", "left": "None"})
         ax.tick_params(labelcolor="w", top="off", bottom="off", left="off", right="off")
         ax.set_xlabel("Cumulative cluster size")
