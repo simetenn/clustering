@@ -459,7 +459,7 @@ class Analysis:
                 sizes, counts = np.unique(experiment, return_counts=True)
                 cumulative = np.cumsum(counts[::-1])[::-1]
 
-
+                print cumulative
 
                 interpolation = scipy.interpolate.InterpolatedUnivariateSpline(sizes, cumulative, k=1)
 
