@@ -713,7 +713,7 @@ class Analysis:
             plt.close()
 
 
-    def results_new(self):
+    def results(self):
         self.createInterpolation()
 
         self.save_to_file()
