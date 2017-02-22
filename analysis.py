@@ -1,5 +1,10 @@
+from __future__ import division
+
 from clustering import CHalos
 from prettyplot import prettyPlot, prettyBar, get_colormap, spines_color, set_style, create_figure, get_current_colormap
+
+
+import uncertainties.unumpy as unp
 
 import os
 import re
@@ -446,7 +451,9 @@ class Analysis:
         for key in self.sizes:
             for experiment in self.sizes[key]:
                 max_size.append(max(experiment))
-        max_size = max(max_size)
+        self.max_size = max(max_size)
+
+
 
         for key in self.sizes:
             self.interpolations[key] = []
@@ -457,17 +464,138 @@ class Analysis:
             for experiment in self.sizes[key]:
 
                 sizes, counts = np.unique(experiment, return_counts=True)
+                #
+                # print("=========================================")
+                # extended_sizes = np.arange(sizes[-1] + 1, self.max_size + 6, 5)
+                # extended_counts = np.zeros(len(extended_sizes))
+                #
+                # extended_sizes = np.concatenate((sizes, extended_sizes))
+                # extended_counts = np.concatenate((counts, extended_counts))
+                # # sizes = np.concatenate((sizes, extended_sizes))
+                # # counts = np.concatenate((counts, extended_counts))
+
                 cumulative = np.cumsum(counts[::-1])[::-1]
+                #
+                # print(extended_sizes)
+                # print(extended_counts)
+                # print sizes
+                # print counts
+                # # print cumulative
+                # # print self.max_size
+                # print cumulative
 
-                print cumulative
-
-                interpolation = scipy.interpolate.InterpolatedUnivariateSpline(sizes, cumulative, k=1)
+                interpolation = scipy.interpolate.InterpolatedUnivariateSpline(sizes, cumulative, k=1, ext=1)
 
                 self.interpolations[key].append(interpolation)
                 self.cumulative[key].append(cumulative)
                 self.unique_sizes[key].append(sizes)
                 self.counts[key].append(counts)
 
+
+    def plotFractionalDifference(self):
+        pattern = re.compile(r"(.*)(H)$")
+
+        for keyH in self.sizes:
+            result = pattern.search(keyH)
+            if result is not None:
+                keyV = re.sub(pattern, r"\1V", keyH)
+                if keyV in self.sizes:
+
+
+                    # Find min max
+                    max_size = []
+                    min_size = []
+                    for size in self.unique_sizes[keyH]:
+                        max_size.append(size.max())
+                        min_size.append(size.min())
+
+                    for size in self.unique_sizes[keyV]:
+                        max_size.append(size.max())
+                        min_size.append(size.min())
+
+
+                    max_cumulative = []
+                    min_cumulative = []
+                    for cumulative in self.cumulative[keyV]:
+                        max_cumulative.append(cumulative.max())
+                        min_cumulative.append(cumulative.min())
+
+
+                    for cumulative in self.cumulative[keyH]:
+                        max_cumulative.append(cumulative.max())
+                        min_cumulative.append(cumulative.min())
+
+
+                    max_size = max(max_size)
+                    min_size = min(min_size)
+
+                    max_cumulative = max(max_cumulative)
+                    min_cumulative = min(min_cumulative)
+
+                    size = np.linspace(min_size, max_size, max_size - min_size + 1)
+
+
+                    # Interpolate
+                    cumulativeH = []
+                    for inter in self.interpolations[keyH]:
+                        cumulativeH.append(inter(size))
+
+                    cumulativeH = np.array(cumulativeH)
+
+
+                    cumulativeV = []
+                    for inter in self.interpolations[keyV]:
+                        cumulativeV.append(inter(size))
+
+                    cumulativeV = np.array(cumulativeV)
+
+
+                    # Calculate mean and error
+                    meanH = np.mean(cumulativeH, axis=0)
+                    stderrH = scipy.stats.sem(cumulativeH, 0)
+
+                    meanV = np.mean(cumulativeV, axis=0)
+                    stderrV = scipy.stats.sem(cumulativeV, 0)
+
+                    # fractional_difference = abs(meanH - meanV)/meanV
+
+                    meanHerr = unp.uarray(meanH, stderrH)
+                    meanVerr = unp.uarray(meanV, stderrV)
+                    # fractional_difference = abs(meanHerr - meanVerr)L/meanVerr
+
+                    fractional_difference_value = np.zeros(len(size))
+                    fractional_difference_err = np.zeros(len(size))
+
+                    for i, (H, V) in enumerate(zip(meanHerr, meanVerr)):
+                        if unp.nominal_values(H) == 0 or unp.nominal_values(V) == 0:
+                            fractional_difference_value[i] = np.nan
+                            fractional_difference_err[i] = np.nan
+                        else:
+                            tmp_fractional_difference = abs(H - V)/V
+                            fractional_difference_value[i] = unp.nominal_values(tmp_fractional_difference)
+                            fractional_difference_err[i] = unp.std_devs(tmp_fractional_difference)
+
+
+
+                    mask = ~np.isnan(fractional_difference_value)
+
+                    prettyPlot(size, fractional_difference_value,
+                               "Fractional difference, $\\frac{{|H - V|}}{{V}}$\n {}".format(keyH[:-3]).replace("_", " "),
+                               "Cluster size", "Nr of clusters",
+                               style="seaborn-white")
+
+                    colors = get_current_colormap()
+
+                    plt.fill_between(size,
+                                     fractional_difference_value - fractional_difference_err,
+                                     fractional_difference_value + fractional_difference_err,
+                                     alpha=0.5, color=colors[0])
+                    plt.legend(["fractional difference", "standard error of the fractional difference"])
+
+
+
+                    plt.savefig(os.path.join(self.output_dir, "figures", "fractional-difference_" + keyH[:-3] + ".png"))
+                    plt.close()
 
 
     def plotCumulativeInterpolation(self):
@@ -506,7 +634,7 @@ class Analysis:
                            new_figure=False,
                            style="seaborn-white")
 
-                legend.append("Datasett {}".format(i))
+                legend.append("Datasett {}".format(i + 1))
 
             #     max_cumulative.append(cumulative.max())
             #     min_cumulative.append(cumulative.min())
@@ -710,6 +838,61 @@ class Analysis:
                     plt.savefig(os.path.join(self.output_dir, "figures", keyH[:-1] + "combined.png"))
                     plt.close()
 
+    def plotMean(self):
+        for key in self.sizes:
+
+            # Find min max
+            max_size = []
+            min_size = []
+            for size in self.unique_sizes[key]:
+                max_size.append(size.max())
+                min_size.append(size.min())
+
+            max_size = max(max_size)
+            min_size = min(min_size)
+
+
+
+            # array of "integers" from min up to inlcuding max
+            size = np.linspace(min_size, max_size, max_size - min_size + 1)
+
+            cumulative = []
+
+            for inter in self.interpolations[key]:
+                cumulative.append(inter(size))
+
+            cumulative = np.array(cumulative)
+
+            mean = np.mean(cumulative, axis=0)
+            p_05 = np.percentile(cumulative, 5, 0)
+            p_95 = np.percentile(cumulative, 95, 0)
+            stderr = scipy.stats.sem(cumulative, 0)
+
+            prettyPlot(size, mean,
+                       "Mean cluster size, {}".format(key).replace("_", " "),
+                       "Cluster size", "Nr of clusters",
+                       style="seaborn-white")
+
+            colors = get_current_colormap()
+            #
+            # plt.fill_between(size, p_05, p_95,
+            #                  alpha=0.5, color=colors[0])\
+            # plt.legend(["mean", "90\% confidence interval"])
+
+            plt.fill_between(size, mean - stderr, mean + stderr,
+                             alpha=0.5, color=colors[0])
+            plt.legend(["mean", "standard error of the mean"])
+
+
+            # plt.xlim([min_size, max_size])
+            plt.ylim([min(mean), max(mean)])
+            #
+            plt.yscale("log")
+            plt.xscale("log")
+
+
+            plt.savefig(os.path.join(self.output_dir, "figures", "mean_" + key + ".png"))
+            plt.close()
 
 
 
@@ -799,9 +982,11 @@ if __name__ == "__main__":
         analysis.createInterpolation()
         # analysis.plotCumulative()
         # analysis.plotCumulativeInterpolation()
+        # analysis.plotMean()
         # analysis.plot()
         # analysis.plotGrid()
-        analysis.plotCompare()
+        # analysis.plotCompare()
+        analysis.plotFractionalDifference()
 
     if args.linking_lengths:
         calculateLinkingLength(data_folder)
