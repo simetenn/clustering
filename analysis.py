@@ -206,241 +206,6 @@ class Analysis:
 
 
 
-    def plot(self):
-        """Plotting all data"""
-        for key in self.sizes:
-            c = 0
-            i = 0
-
-            t_max = 0
-            t_min = 10000
-
-            data_max = 0
-            data_min = 10000
-
-            legend = []
-            nr_colors = len(self.sizes[key])
-            for data in self.sizes[key]:
-                t = range(1, len(data) + 1)
-
-                prettyPlot(data, t,
-                           "Cumulative cluster size",
-                           "Cluster size",
-                           "Nr of clusters",
-                           color=c,
-                           nr_colors=nr_colors,
-                           new_figure=False,
-                           style="seaborn-white")
-
-                if max(data) > data_max:
-                    data_max = max(data)
-                if min(data) < data_min:
-                    data_min = min(data)
-                if max(t) > t_max:
-                    t_max = max(t)
-                if min(t) < t_min:
-                    t_min = min(t)
-
-                legend.append("Datasett {}".format(i))
-                i += 1
-                c += 1
-
-            plt.yscale("log")
-            plt.xscale("log")
-            plt.ylim([t_min, t_max])
-            plt.xlim([data_min, data_max])
-            plt.legend(legend)
-
-            plt.savefig(os.path.join(self.output_dir, "figures", "cumulative_" + key + "_binned.png"))
-            # plt.clf()
-            plt.close()
-
-
-
-    def mean(self):
-        #Calculate and plot mean values
-        for key in self.sizes:
-            size, mean, bins, width = self._calculateMean(self.sizes[key])
-
-            cumsumAll = np.cumsum(mean[:, ::-1], 1)[:, ::-1]
-            cumsum = np.mean(cumsumAll, 0)
-            sumstd = scipy.stats.sem(cumsumAll, 0)
-            # prettyPlot(size, std, "Cumulative cluster size, mean", "nr cells, mean", "nr of cluster with number of cells > self.nrParticles", color=2)
-            # prettyPlot(size, cumsum, "Cumulative cluster size, mean", "nr cells, mean", "nr of cluster with number of cells > self.nrParticles", color=0, new_figure=False)
-
-            # plt.legend(["Mean", "Standard deviation"])
-            max_sizes = []
-            for size in self.sizes[key]:
-                max_sizes.append(max(size))
-            max_size = max(max_sizes)
-
-            bins = (bins/max_size)*100
-            width = (width/max_size)*100
-
-            ax = prettyBar(cumsum, index=bins[:-1], color=0, nr_colors=2, error=sumstd, width=width, linewidth=2)
-            ax.set_xticks(bins-width/2)
-            ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
-
-            plt.yscale("log")
-            plt.ylabel("Nr of clusters")
-            plt.xlabel("Cluster size [\% of max cluster size {}]".format(max_size), fontsize=16)
-            plt.title("Cumulative cluster size, mean")
-
-            plt.savefig(os.path.join(self.output_dir, "figures", key + "mean.png"))
-            plt.close()
-
-
-
-    def fractionalDifferenceHV(self):
-        """Calculate fractionalDifference between H and V"""
-        pattern = re.compile(r"(.*)(H)$")
-
-
-        for keyH in self.sizes:
-            result = pattern.search(keyH)
-            if result is not None:
-                keyV = re.sub(pattern, r"\1V", keyH)
-                if keyV in self.sizes:
-                    data_max = 0
-                    data_min = 100000
-                    for data in self.sizes[keyH]:
-                        if max(data) > data_max:
-                            data_max = max(data)
-
-                        if min(data) < data_min:
-                            data_min = min(data)
-
-                    for data in self.sizes[keyV]:
-                        if max(data) > data_max:
-                            data_max = max(data)
-
-                        if min(data) < data_min:
-                            data_min = min(data)
-
-                    bins = np.linspace(data_min, data_max, nr_bins)
-
-
-
-
-
-                    # plot cumulative cluster size H and V from same animal in the same plot
-                    t_max = 0
-                    t_min = 10000
-                    nr_colors = 2
-                    prettyPlot([data_min-1], [t_min-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_colors=nr_colors, new_figure=False)
-                    prettyPlot([data_min-1], [t_min-1], "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_colors=nr_colors, new_figure=False)
-                    plt.legend(["V", "H"])
-                    i = 0
-
-                    for data in self.sizes[keyV]:
-                        t = range(1, len(data) + 1)
-
-                        prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=0, nr_colors=nr_colors, new_figure=False)
-
-                        if max(t) > t_max:
-                            t_max = max(t)
-                        if min(t) < t_min:
-                            t_min = min(t)
-
-                        i += 1
-
-                    for data in self.sizes[keyH]:
-                        t = range(1, len(data) + 1)
-
-                        prettyPlot(data, t, "Cumulative cluster size", "Cluster size", "Nr of clusters", color=1, nr_colors=nr_colors, new_figure=False)
-
-                        if max(t) > t_max:
-                            t_max = max(t)
-                        if min(t) < t_min:
-                            t_min = min(t)
-
-                        i += 1
-
-                    plt.yscale("log")
-                    plt.xscale("log")
-                    plt.ylim([t_min, t_max])
-                    plt.xlim([data_min, data_max])
-
-
-                    plt.savefig(os.path.join(self.output_dir, "figures", keyH[:-1] + "combined.png"))
-                    plt.close()
-
-
-
-
-
-
-
-                    meanH = []
-                    for data in self.sizes[keyH]:
-                        meanH.append(np.histogram(data, bins=bins)[0])
-
-                    meanH = np.array(meanH)
-
-
-                    meanV = []
-                    for data in self.sizes[keyV]:
-                        meanV.append(np.histogram(data, bins=bins)[0])
-
-                    meanV = np.array(meanV)
-
-                    width = bins[1] - bins[0]
-                    cumsumAllH = np.cumsum(meanH[:, ::-1], 1)[:, ::-1]
-                    cumsumAllV = np.cumsum(meanV[:, ::-1], 1)[:, ::-1]
-
-
-                    cumsumH = np.mean(cumsumAllH, 0)
-                    cumsumV = np.mean(cumsumAllV, 0)
-                    sumstdV = np.std(cumsumAllV, 0)
-                    sumstdH = np.std(cumsumAllH, 0)
-
-
-                    diff = 1 - cumsumH/cumsumV.astype(float)
-
-                    stddiff = diff*np.sqrt(sumstdV**2/cumsumV**2 + sumstdH**2/cumsumH**2)
-
-                    #plot two mean values against each other
-                    bins = (bins/data_max)*100
-
-                    width = bins[1] - bins[0]
-                    ax = prettyBar(cumsumV, index=bins[:-1], color=0, nr_colors=2, error=sumstdV, width=width, linewidth=2)
-                    ax = prettyBar(cumsumH, index=bins[:-1], color=4, nr_colors=6, error=sumstdH, width=width, linewidth=2,
-                                   new_figure=False, alpha=0.6,
-                                   error_kw=dict(ecolor=get_colormap()[4], lw=2, capsize=10, capthick=2))
-                    ax.set_xticks(bins-width/2)
-                    ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
-
-                    plt.yscale("log")
-                    plt.legend(["V", "H"])
-                    plt.ylabel("Nr of clusters")
-                    plt.xlabel("Cluster size [\% of max cluster size {}]".format(data_max), fontsize=16)
-                    plt.title("Cumulative cluster size, mean")
-
-                    plt.savefig(os.path.join(self.output_dir, "figures", keyH[:-1] + "compare.png"))
-                    plt.close()
-
-
-
-
-                    # Plot fractional difference
-                    width = bins[1] - bins[0]
-                    ax = prettyBar(diff, index=bins[:-1], color=0, nr_colors=2, error=stddiff, width=width, linewidth=2)
-                    ax.set_xticks(bins-width/2)
-                    ax.set_xticklabels(np.round(bins, 0).astype(int), fontsize=14, rotation=0)
-
-                    plt.ylabel("Fractional difference nr of cluster")
-                    plt.xlabel("Cluster size [\% of max cluster size {}]".format(data_max), fontsize=16)
-                    plt.title("Fractional difference, (V-H)/V")
-
-                    # prettyPlot(size, diff, "Fractional difference, (V-H)/V", "CLuster size", "Fractional difference nr of cluster", color=0)
-
-                    plt.savefig(os.path.join(self.output_dir, "figures", keyH[:-1] + "difference.png"))
-                    plt.close()
-
-
-
-
-
     def createInterpolation(self):
         self.interpolations = {}
         self.cumulative = {}
@@ -948,15 +713,16 @@ class Analysis:
             plt.close()
 
 
-    def results(self):
+    def results_new(self):
+        self.createInterpolation()
+
         self.save_to_file()
-        self.plot()
-        self.mean()
-        self.fractionalDifferenceHV()
+        self.plotCumulative()
+        self.plotCumulativeInterpolation()
+        self.plotMean()
         self.plotGrid()
-
-
-
+        self.plotCompare()
+        self.plotFractionalDifference()
 
 
 
@@ -978,15 +744,8 @@ if __name__ == "__main__":
 
     if args.results:
         analysis = Analysis(analysed_results_dir=args.analysed_results_dir)
-        # analysis.results()
-        analysis.createInterpolation()
-        # analysis.plotCumulative()
-        # analysis.plotCumulativeInterpolation()
-        # analysis.plotMean()
-        # analysis.plot()
-        # analysis.plotGrid()
-        # analysis.plotCompare()
-        analysis.plotFractionalDifference()
+        analysis.results()
+
 
     if args.linking_lengths:
         calculateLinkingLength(data_folder)
